@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "GlitchThis"
+version = "0.1.0"
+description = "TRAT Control PC via Telegram"
+readme = "README.md"
+requires-python = ">=3.11"
+
+authors = [
+    { name = "mathisgxd", email = "gxd.mathis@gmail.com" }
+]
+
+license = { text = "MIT" }
+
+dependencies = [
+    "colorama>=0.4.6",
+    "customtkinter>=5.2.2",
+    "darkdetect>=0.8.0",
+    "greenlet>=3.2.4",
+    "packaging>=25.0",
+    "pillow>=11.3.0",
+    "pyperclip>=1.9.0",
+    "SQLAlchemy>=2.0.43",
+    "typing_extensions>=4.15.0"
+]
+
+keywords = [
+    "rat",
+    "telegram",
+    "bot",
+    "sqlite",
+]
+
+[project.urls]
+Homepage = "https://github.com/mathisgxd/GlitchThis"
+Repository = "https://github.com/mathisgxd/GlitchThis"
+Issues = "https://github.com/mathisgxd/GlitchThis/issues"
+
