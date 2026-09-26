@@ -91,7 +91,7 @@ def auth_handler(level: int | Levels = Levels.BASIC):#, *args, **kwargs):
 
 FUNC_MAPPINGS = {}
 
-def command_handler(name: str, description: str | None = None, level: int | Levels = Levels.BASIC, show: bool = True, *args, **kwargs):#, *args, **kwargs):
+def command_handler(name: str, description: str | None = None, level: int | Levels = Levels.BASIC, show: bool = True, supports_message_args: bool = True, *args, **kwargs):#, *args, **kwargs):
     '''
     Uses auth_handler and bot.message_handler
 
@@ -110,9 +110,11 @@ def command_handler(name: str, description: str | None = None, level: int | Leve
         @bot.message_handler(commands=[name])#, *args, **kwargs)
         @auth_handler(command.level)
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(message_or_call: Message | CallbackQuery, *args, **kwargs):
+            message_args = [arg.strip() for arg in " ".join(message_or_call.text.split()[1:]).split(",")] if supports_message_args and (type(message_or_call) == Message) and (message_or_call.content_type == "text") and len(message_or_call.text.split()) > 1 else []
+            #print(message_args)
             print(f"Command '{command.name}' executed")
-            result = await func(*args, **kwargs)
+            result = await func(message_or_call, *message_args, *args, **kwargs)
             return result
         if not name in FUNC_MAPPINGS.keys():
             wrapper.command_name = name
@@ -188,6 +190,9 @@ async def media_handler(message: Message):
         file_data = message.video
         file_name = file_data.file_unique_id + ".mp4"
 
+    if (medium_with_same_name := data.get_medium(message.caption, message.content_type)):
+        medium_with_same_name.set_name(None)
+        
     if not (medium := data.get_medium_by_file_name(file_name)):
         medium = data.create_medium(message.content_type, file_name, message.caption)
     elif message.caption:
