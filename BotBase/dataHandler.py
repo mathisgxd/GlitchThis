@@ -34,8 +34,9 @@ class ManageSession:
             session.commit()
 
 class Levels(IntEnum):
-    BASIC = 0
-    OWNER = 1
+    UNAUTHORIZED = 0
+    BASIC = 1
+    OWNER = 2
 
 class User(Base, ManageSession):
     __tablename__ = "users"
@@ -107,33 +108,45 @@ class DataSession(Session):
     def media(self) -> List[Medium]:
         return self.query(Medium).all()
 
-    def get(self, model, by, value):
+    """ def get(self, model, by, value):
         '''Base get method'''
-        return self.scalars(select(model).where(by == value)).first()
+        return self.scalars(select(model).where(by == value)).first() """
 
-    def get_user(self, tg_id: int) -> User:
+    def get(self, model, create_if_nonexistent: bool = False, **kwargs):
+        '''Base get method'''
+        instance = self.query(model).filter_by(**kwargs).first()
+
+        if instance:
+            return instance
+        
+        if create_if_nonexistent:
+            return self.create(model, **kwargs)
+        
+        return None
+
+    def get_user(self, tg_id: int) -> User | None:
         '''Get a user by its tg id. Returns None if not registered.'''
-        return self.get(User, User.tg_id, tg_id)
+        return self.get(User, tg_id=tg_id)
 
-    def get_chat(self, tg_id: int) -> Chat:
+    def get_chat(self, tg_id: int) -> Chat | None:
         '''Get a chat by its tg id. Returns None if not registered.'''
-        return self.get(Chat, Chat.tg_id, tg_id)
+        return self.get(Chat, tg_id=tg_id)
 
-    def get_command(self, name: str) -> Command:
+    def get_command(self, name: str) -> Command | None:
         '''Get a command by its name. Returns None if not registered.'''
-        return self.get(Command, Command.name, name)
+        return self.get(Command, name=name)
 
-    def get_medium(self, name: str) -> Medium:
+    def get_medium(self, name: str, media_type: str | Medium.Types | None = None) -> Medium | None:
         '''Get a medium by its name. Returns None if not registered.'''
-        return self.get(Medium, Medium.name, name)
+        return self.get(Medium, name=name, media_type=media_type)
 
-    def get_medium_by_file_name(self, file_name: str) -> Medium:
+    def get_medium_by_file_name(self, file_name: str, media_type: str | Medium.Types | None = None) -> Medium | None:
         '''Get a medium by its file name. Returns None if not registered.'''
-        return self.get(Medium, Medium.file_name, file_name)
+        return self.get(Medium, file_name=file_name, media_type=media_type)
 
-    def get_medium_by_id(self, id: int) -> Medium:
+    def get_medium_by_id(self, id: int) -> Medium | None:
         '''Get a medium by its id. Returns None if not registered.'''
-        return self.get(Medium, Medium.id, id)
+        return self.get(Medium, id=id)
 
     def create(self, model, commit: bool = True, **kwargs):
         '''Base create method'''

@@ -13,7 +13,12 @@ media/photo/*
 media/video/*
 !media/video/.gitkeep
 
+GTEFiles/*
+!GTEFiles/.gitkeep
+
 Data.db
+
+notepad.txt
 
 executer_copy.py
 

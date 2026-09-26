@@ -7,19 +7,21 @@ from BotBase import mediaHandler#, data, Medium
 import ctypes
 import os
 import subprocess
-import qrcode
-import io
-import PIL
+#import qrcode
+from io import BytesIO
+from PIL import Image
 import pygame
 import pygetwindow as gw
 import pynput
-import cv2
-import random
+#import cv2
+#import random
+import re
+import webbrowser
 
 #import ChromeReader
-import tempfile
-import shutil
-import uuid
+#import tempfile
+#import shutil
+#import uuid
 #import os
 
 import time
@@ -140,6 +142,45 @@ def crash():
     except:
         return False
 
+# Programs
+def open_notepad(text: str | None = None, delete_after: bool = False):
+    path = "notepad.txt"
+    with open(path, "w", encoding="utf-8") as txt_file:
+        txt_file.write(text or "")
+
+        subprocess.Popen(["notepad.exe", path])
+
+        txt_file.close()
+
+        # Delete file
+        if delete_after:
+            while True:
+                try:
+                    os.remove(path)
+                    break
+                except:
+                    time.sleep(0.2)
+
+def execute_cmd(cmd: str) -> str:
+    return subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout
+
+def is_url(text: str):
+    return re.search(r'(https?://\S+)', text)
+
+def open_site(url_or_query: str):
+    if is_url(url_or_query):
+        webbrowser.open_new(url_or_query)
+    else:
+        webbrowser.open_new(f"https://www.google.com/search?q={url_or_query}")
+
+# Image
+def image_to_buffer(image: Image.Image):
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    buffer.seek(0)
+
+    return buffer
+
 # Projector / display helpers
 def disconnect_lim():
     try:
@@ -197,3 +238,34 @@ class Video(mediaHandler.File):
                 window.close()
         else:
             close_window()
+
+# GTE
+class GTEFiles:
+    PATH: str = "GTEFiles"
+
+    @classmethod
+    def files(cls):
+        return (filename.removesuffix(".gte") for filename in os.listdir(cls.PATH))
+
+
+    @classmethod
+    def load(cls, name: str):
+        file_path = os.path.join(cls.PATH, name+ ".gte")
+        
+        with open(file_path, "r") as file:
+            code = file.read()
+
+        return code
+    
+    @classmethod
+    def save(cls, name: str, code: str):
+        file_path = os.path.join(cls.PATH, name + ".gte")
+        
+        with open(file_path, "w") as file:
+            file.write(code)
+
+    @classmethod
+    def delete(cls, name: str):
+        file_path = os.path.join(cls.PATH, name + ".gte")
+
+        os.remove(file_path)

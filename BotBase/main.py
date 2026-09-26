@@ -1,6 +1,6 @@
 import asyncio
 from telebot.async_telebot import AsyncTeleBot
-from telebot.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Chat, User
+from telebot.types import Message, BotCommand, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Chat, User
 from functools import wraps
 import json
 
@@ -24,7 +24,7 @@ def check_auth(chat: Chat, user: User, level: int | Levels | None):
     else:
         # Register chat
         print(f"ERROR: Requester CHAT is not registered. Registering now")
-        chat_data = data.create_chat(tg_id=chat.id, level=Levels.BASIC)
+        chat_data = data.create_chat(tg_id=chat.id, level=Levels.BASIC)#Levels.UNAUTHORIZED)
 
     # If user is registered:
     if (user_data := data.get_user(user.id)):
@@ -33,9 +33,9 @@ def check_auth(chat: Chat, user: User, level: int | Levels | None):
     else:
         # Register user
         print(f"ERROR: Requester USER is not registered. Registering now")
-        user_data = data.create_user(tg_id=user.id, level=Levels.BASIC)
+        user_data = data.create_user(tg_id=user.id, level=Levels.BASIC)#Levels.UNAUTHORIZED)
 
-    #print(chat_data.level, user_data.level, level)
+    #print(chat.id, user.id, chat_data.level, user_data.level, level)
 
     if True: #level:
         # If the chat level is lower than the required level:
@@ -59,6 +59,7 @@ def auth_handler(level: int | Levels = Levels.BASIC):#, *args, **kwargs):
         #@bot.message_handler(*args, **kwargs)
         @wraps(func)
         async def wrapper(message_or_call: Message | CallbackQuery, *args, **kwargs):
+            #print(level)
             is_message = type(message_or_call) == Message
             if not check_auth(message_or_call.chat if is_message else message_or_call.message.chat, message_or_call.from_user, level):
                 return
@@ -88,6 +89,8 @@ def auth_handler(level: int | Levels = Levels.BASIC):#, *args, **kwargs):
         return wrapper
     return decorator """
 
+FUNC_MAPPINGS = {}
+
 def command_handler(name: str, description: str | None = None, level: int | Levels = Levels.BASIC, show: bool = True, *args, **kwargs):#, *args, **kwargs):
     '''
     Uses auth_handler and bot.message_handler
@@ -97,28 +100,34 @@ def command_handler(name: str, description: str | None = None, level: int | Leve
     :param level: Minimum required chat and user level
     :param show: Show in the bot command list
     '''
+    global FUNC_MAPPINGS
     def decorator(func):
         if not (command := data.get_command(name)):
             print(f"ERROR: Command is not registered. Registering now")
             command = data.create_command(name, level, description, show)
 
-        @auth_handler(command.level)
+        #@auth_handler(command.level)
         @bot.message_handler(commands=[name])#, *args, **kwargs)
+        @auth_handler(command.level)
         @wraps(func)
         async def wrapper(*args, **kwargs):
+            print(f"Command '{command.name}' executed")
             result = await func(*args, **kwargs)
             return result
+        if not name in FUNC_MAPPINGS.keys():
+            wrapper.command_name = name
+            FUNC_MAPPINGS[name] = wrapper
         return wrapper
     return decorator
 
 
-callback_functions = {}
+#callback_functions = {}
 
-def FuncInlineKeyboardButton(text: str, func, *args ) -> InlineKeyboardButton:#, **kwargs) -> InlineKeyboardButton:
-    callback_functions[func.__name__] = func
+def FuncInlineKeyboardButton(text: str, func_or_command_name, *args ) -> InlineKeyboardButton:#, **kwargs) -> InlineKeyboardButton:
+    command_name = func_or_command_name if type(func_or_command_name) == str else func_or_command_name.command_name#[key for key, val in FUNC_MAPPINGS.items() if val.__name__ == func_or_command_name.__name__][0]
 
     callback_data = json.dumps({
-        "func": func.__name__,
+        "cmd": command_name,
         "args": args,
         #"kwargs": kwargs
     })
@@ -129,7 +138,7 @@ def FuncInlineKeyboardButton(text: str, func, *args ) -> InlineKeyboardButton:#,
 async def callback_query(call):
     data = json.loads(call.data)
 
-    func = callback_functions[data["func"]]
+    func = FUNC_MAPPINGS[data["cmd"]]
     await func(
         call,
         *data["args"],
@@ -195,10 +204,45 @@ async def media_handler(message: Message):
 
     await _file_handler(message, file)
 
+# Text handling
+""" async def default_message_handler(message: Message):
+    pass
+
+_message_handler = default_message_handler
+
+def set_message_handler(message_handler):
+    global _message_handler
+    _message_handler = message_handler """
+
+@bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message is not None)
+async def text_handler(message: Message):
+    #await _message_handler(message)
+
+    if message.reply_to_message:
+        match message.reply_to_message.content_type:
+            case "photo":
+                medium = data.get_medium_by_file_name(message.reply_to_message.photo[-1].file_unique_id + ".jpg", "photo")
+            case "audio":
+                medium = data.get_medium_by_file_name(message.reply_to_message.audio.file_unique_id + ".ogg", "audio")
+            case "voice":
+                medium = data.get_medium_by_file_name(message.reply_to_message.voice.file_unique_id + ".ogg", "voice")
+            case "voice":
+                medium = data.get_medium_by_file_name(message.reply_to_message.video.file_unique_id + ".mp4", "video")
+            case _:
+                return
+
+        if not medium:
+            medium = await media_handler(message.reply_to_message)
+    
+        medium.set_name(message.text)
+        await reply_to(message, f"Medium name set to '{message.text}'")
+
 
         
 
-
+async def start():
+    await bot.set_my_commands([BotCommand(cmd.name, cmd.description) for cmd in data.commands if cmd.show])
+    await bot.polling()
 
 def run():
-    asyncio.run(bot.polling())
+    asyncio.run(start())

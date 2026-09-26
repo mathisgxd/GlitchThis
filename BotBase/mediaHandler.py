@@ -32,7 +32,7 @@ class File:
         os.startfile(self.path)
 
     def close(self):
-        windows = gw.getWindowsWithTitle(self.medium.name)
+        windows = gw.getWindowsWithTitle(self.medium.file_name)
 
         if windows:
             windows [0].close()
