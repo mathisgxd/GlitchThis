@@ -38,7 +38,7 @@ class File:
             windows [0].close()
 
     def close_all(self):
-        for window in gw.getWindowsWithTitle(self.medium.name):
+        for window in gw.getWindowsWithTitle(self.medium.file_name):
             window.close()
 
     def exists(self):

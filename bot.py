@@ -139,7 +139,7 @@ async def take_screenshot(message_or_call):
 get_medium_by_name_or_id = lambda name_or_id, media_type: data.get_medium_by_id(name_or_id) if (type(name_or_id) == int) or name_or_id.isdigit() else data.get_medium(name_or_id, media_type)
 
 @command_handler("photo", show=False)
-async def photo_handler(message_or_call, medium_name_or_id: str | int, cmd: str = "open", reply: bool = True):
+async def photo_handler(message_or_call, medium_name_or_id: str | int, cmd: str = "show", reply: bool = True):
     medium = get_medium_by_name_or_id(medium_name_or_id, "photo")
     
     if not medium:
@@ -149,6 +149,14 @@ async def photo_handler(message_or_call, medium_name_or_id: str | int, cmd: str 
     photo = executer.Photo(medium)
 
     match cmd:
+        case "show":
+            text = "📷 Photo"
+            reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Open", photo_handler, photo.medium.id, "open", False)],
+                                                    [FuncInlineKeyboardButton("Close", photo_handler, photo.medium.id, "close", False)],
+                                                    [FuncInlineKeyboardButton("Set as wallpaper", photo_handler, photo.medium.id, "wallpaper", False)],
+                                                    [FuncInlineKeyboardButton("Delete", photo_handler, photo.medium.id, "delete", False)]])
+            await reply_to(message_or_call, text, reply_markup=reply_markup)
+            return
         case "open":
             photo.open()
             action = "opened"
@@ -165,12 +173,12 @@ async def photo_handler(message_or_call, medium_name_or_id: str | int, cmd: str 
             photo.delete()
             action = "deleted"
 
-    if reply:
-        text = f"📷 Photo '{medium_name_or_id}' {action}"
+    if reply or cmd=="delete":
+        text = f"📷 Photo {f"'{photo.medium.name}'" if photo.medium.name else photo.medium.id} {action}"
         await reply_to(message_or_call, text)
 
 @command_handler("audio", show=False)
-async def audio_handler(message_or_call, medium_name_or_id: str | int, cmd: str = "play", reply: bool = True):
+async def audio_handler(message_or_call, medium_name_or_id: str | int, cmd: str = "show", reply: bool = True):
     medium = get_medium_by_name_or_id(medium_name_or_id, "audio")
 
     if not medium:
@@ -180,31 +188,13 @@ async def audio_handler(message_or_call, medium_name_or_id: str | int, cmd: str 
     audio = executer.Audio(medium)
 
     match cmd:
-            case "play":
-                audio.play()
-                action = "playing"
-            case "stop":
-                audio.stop()
-                action = "stopped"
-            case "delete":
-                audio.delete()
-                action = "deleted"
-
-    if reply:
-        text = f"🎵 Audio '{medium_name_or_id}' {action}"
-        await reply_to(message_or_call, text)
-
-@command_handler("voice", show=False)
-async def voice_handler(message_or_call, medium_name_or_id: str | int, cmd: str = "play", reply: bool = True):
-    medium = get_medium_by_name_or_id(medium_name_or_id, "voice")
-
-    if not medium:
-        await reply_to(message_or_call, f"ERROR: Voice medium {medium_name_or_id} not found")
-        return
-    
-    audio = executer.Audio(medium)
-
-    match cmd:
+        case "show":
+            text = "🎵 Audio"
+            reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("▶️ Play", audio_handler, audio.medium.id, "play", False)],
+                                                    [FuncInlineKeyboardButton("⏹️ Stop", audio_handler, audio.medium.id, "stop", False)],
+                                                    [FuncInlineKeyboardButton("Delete", audio_handler, audio.medium.id, "delete", False)]])
+            await reply_to(message_or_call, text, reply_markup=reply_markup)
+            return
         case "play":
             audio.play()
             action = "playing"
@@ -215,12 +205,44 @@ async def voice_handler(message_or_call, medium_name_or_id: str | int, cmd: str 
             audio.delete()
             action = "deleted"
 
-    if reply:
-        text = f"🎤 Voice '{medium_name_or_id}' {action}"
+    if reply or cmd=="delete":
+        text = f"🎵 Audio {f"'{audio.medium.name}'" if audio.medium.name else audio.medium.id} {action}"
+        await reply_to(message_or_call, text)
+
+@command_handler("voice", show=False)
+async def voice_handler(message_or_call, medium_name_or_id: str | int, cmd: str = "show", reply: bool = True):
+    medium = get_medium_by_name_or_id(medium_name_or_id, "voice")
+
+    if not medium:
+        await reply_to(message_or_call, f"ERROR: Voice medium {medium_name_or_id} not found")
+        return
+    
+    audio = executer.Audio(medium)
+
+    match cmd:
+        case "show":
+            text = "🎤 Voice"
+            reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("▶️ Play", voice_handler, audio.medium.id, "play", False)],
+                                                    [FuncInlineKeyboardButton("⏹️ Stop", voice_handler, audio.medium.id, "stop", False)],
+                                                    [FuncInlineKeyboardButton("Delete", voice_handler, audio.medium.id, "delete", False)]])
+            await reply_to(message_or_call, text, reply_markup=reply_markup)
+            return
+        case "play":
+            audio.play()
+            action = "playing"
+        case "stop":
+            audio.stop()
+            action = "stopped"
+        case "delete":
+            audio.delete()
+            action = "deleted"
+
+    if reply or cmd=="delete":
+        text = f"🎤 Voice {f"'{audio.medium.name}'" if audio.medium.name else audio.medium.id} {action}"
         await reply_to(message_or_call, text)
 
 @command_handler("video", show=False)
-async def video_handler(message_or_call, medium_name_or_id: str | int, cmd: str = "open", reply: bool = True):
+async def video_handler(message_or_call, medium_name_or_id: str | int, cmd: str = "show", reply: bool = True):
     medium = get_medium_by_name_or_id(medium_name_or_id, "video")
     
     if not medium:
@@ -230,6 +252,13 @@ async def video_handler(message_or_call, medium_name_or_id: str | int, cmd: str 
     video = executer.Video(medium)
 
     match cmd:
+        case "show":
+            text = "📽️ Video"
+            reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Open", video_handler, video.medium.id, "open", False)],
+                                                [FuncInlineKeyboardButton("Close", video_handler, video.medium.id, "close", False)],
+                                                [FuncInlineKeyboardButton("Delete", video_handler, video.medium.id, "delete", False)]])
+            await reply_to(message_or_call, text, reply_markup=reply_markup)
+            return
         case "open":
             video.open()
             action = "opened"
@@ -240,8 +269,8 @@ async def video_handler(message_or_call, medium_name_or_id: str | int, cmd: str 
             video.delete()
             action = "deleted"
     
-    if reply:
-        text = f"📽️ Video '{medium_name_or_id}' {action}"
+    if reply or cmd=="delete":
+        text = f"📽️ Video {f"'{video.medium.name}'" if video.medium.name else video.medium.id} {action}"
         await reply_to(message_or_call, text)
 
 @command_handler("file", show=False, supports_message_args=False)
@@ -259,42 +288,33 @@ async def file_handler(message: Message, file: File | None = None):
             await reply_to(message, f"ERROR: {media_type} file named '{name}' not found")
             return
     
-    if file.medium.media_type == "photo":
-        text = "📷 Photo"
-        reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Open", photo_handler, file.medium.id, "open", False)],
-                                             [FuncInlineKeyboardButton("Close", photo_handler, file.medium.id, "close", False)],
-                                             [FuncInlineKeyboardButton("Set as wallpaper", photo_handler, file.medium.id, "wallpaper", False)],
-                                             [FuncInlineKeyboardButton("Delete", photo_handler, file.medium.id, "delete", False)]])
-    elif file.medium.media_type == "audio":
-        text = "🎵 Audio"
-        reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("▶️ Play", audio_handler, file.medium.id, "play", False)],
-                                             [FuncInlineKeyboardButton("⏹️ Stop", audio_handler, file.medium.id, "stop", False)],
-                                             [FuncInlineKeyboardButton("Delete", audio_handler, file.medium.id, "delete", False)]])
-    elif file.medium.media_type == "voice":
-        text = "🎤 Voice"
-        reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("▶️ Play", voice_handler, file.medium.id, "play", False)],
-                                             [FuncInlineKeyboardButton("⏹️ Stop", voice_handler, file.medium.id, "stop", False)],
-                                             [FuncInlineKeyboardButton("Delete", voice_handler, file.medium.id, "delete", False)]])
-    elif file.medium.media_type == "video":
-        text = "📽️ Video"
-        reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Open", video_handler, file.medium.id, "open", False)],
-                                             [FuncInlineKeyboardButton("Close", video_handler, file.medium.id, "close", False)],
-                                             [FuncInlineKeyboardButton("Delete", video_handler, file.medium.id, "delete", False)]])
+    await (photo_handler, audio_handler, voice_handler, video_handler)[("photo", "audio", "voice", "video").index(file.medium.media_type)] (message, file.medium.id, "show")
 
-    await reply_to(message, text, reply_markup=reply_markup)
 
 set_file_handler(file_handler)
 
 # GTE
 @command_handler("gte_handler", show=False)
-async def GTE_handler(call: CallbackQuery, gte_file_name: str, cmd: str = "execute"):
+async def GTE_handler(message_or_call: Message | CallbackQuery, gte_file_name: str, cmd: str = "show"):
+    code = executer.GTEFiles.load(gte_file_name)
+
     match cmd:
+        case "show":
+            text = f"GTE '{gte_file_name}':\n\n{code}"
+            reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Execute", GTE_handler, gte_file_name, "execute")],
+                                                    [InlineKeyboardButton("Modify", switch_inline_query_current_chat=f"/gte {gte_file_name}\n{code}")],
+                                                    [FuncInlineKeyboardButton("Delete", GTE_handler, gte_file_name, "delete")],
+                                                    [FuncInlineKeyboardButton("< GTE files", GTE)]])
+            await reply_to(message_or_call, text, reply_markup=reply_markup)
         case "execute":
-            code = executer.GTEFiles.load(gte_file_name)
             print(f"Executing GTE '{gte_file_name}':\n{code}")
 
             code_lines = code.splitlines()
+            tasks = []
             for code_line in code_lines:
+                if not code_line:
+                    continue
+
                 split_line = code_line.split()
                 command_name = split_line[0]
                 args = [arg.strip() for arg in " ".join(split_line[1:]).split(",")] if len(split_line) > 1 else None # Change this so it relies on a separator character instead of spaces
@@ -303,22 +323,39 @@ async def GTE_handler(call: CallbackQuery, gte_file_name: str, cmd: str = "execu
                     match command_name:
                         case "wait":
                             time = float(args[0]) if args else 1
-                            await reply_to(call, f"Waiting {time} second(s)")
+                            #await asyncio.sleep(min(0.1, time))
+                            await reply_to(message_or_call, f"Waiting {time} second(s)")
+                            #if time > 0.1:
+                            #    await asyncio.sleep(time - 0.1)
                             await asyncio.sleep(time)
 
                     continue
 
                 if args:
-                    await FUNC_MAPPINGS[command_name](call, *args)
+                    #await FUNC_MAPPINGS[command_name](message_or_call, *args)
+                    tasks.append(asyncio.create_task(FUNC_MAPPINGS[command_name](message_or_call, *args)))
                 else:
-                    await FUNC_MAPPINGS[command_name](call)
+                    #await FUNC_MAPPINGS[command_name](message_or_call)
+                    tasks.append(asyncio.create_task(FUNC_MAPPINGS[command_name](message_or_call)))
+
+            await asyncio.gather(*tasks)
+            await GTE_handler(message_or_call, gte_file_name, "show")
         case "delete":
             executer.GTEFiles.delete(gte_file_name)
-            await reply_to(call, f"GTE file '{gte_file_name}' deleted")
+            await reply_to(message_or_call, f"GTE file '{gte_file_name}' deleted")
 
 @command_handler("gte", "Execute a list of commands", supports_message_args=False)
 async def GTE(message_or_call: Message | CallbackQuery, gte_file_name: str | None = None):
+    async def show_files():
+        reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton(gte_file_name, "gte", gte_file_name)] for gte_file_name in executer.GTEFiles.files()])
+        await reply_to(message_or_call, "GTE files:", reply_markup=reply_markup)
+
+
     if not gte_file_name:
+        if type(message_or_call) == CallbackQuery:
+            await show_files()
+            return
+        
         text_lines = message_or_call.text.splitlines()
 
         split_line = text_lines[0].split()
@@ -331,16 +368,12 @@ async def GTE(message_or_call: Message | CallbackQuery, gte_file_name: str | Non
             if gte_file_name:
                 code = executer.GTEFiles.load(gte_file_name)
             else:
-                reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton(gte_file_name, "gte", gte_file_name)] for gte_file_name in executer.GTEFiles.files()])
-                await reply_to(message_or_call, "GTE files:", reply_markup=reply_markup)
+                await show_files()
                 return
     else:
         code = executer.GTEFiles.load(gte_file_name)
 
-    text = f"GTE '{gte_file_name}':\n\n{code}"
-    reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Execute", GTE_handler, gte_file_name, "execute")],
-                                         [FuncInlineKeyboardButton("Delete", GTE_handler, gte_file_name, "delete")],])
-    await reply_to(message_or_call, text, reply_markup=reply_markup)
+    await GTE_handler(message_or_call, gte_file_name, "show")
 
 run()
 

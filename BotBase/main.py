@@ -149,13 +149,20 @@ async def callback_query(call):
 
     await bot.answer_callback_query(call.id)
 
-async def reply_to(message_or_call: Message | CallbackQuery, *args, **kwargs):
+async def reply_to(message_or_call: Message | CallbackQuery, *args, edit: bool = True, **kwargs):
     '''Reply func both compatible with message and call'''
     print(type(message_or_call))
     if type(message_or_call) == Message:
         await bot.reply_to(message_or_call, *args, **kwargs)
     else:
-        await bot.reply_to(message_or_call.message, *args, **kwargs)
+        #await bot.answer_callback_query(message_or_call.id)
+        if edit:
+            try:
+                await bot.edit_message_text(chat_id=message_or_call.message.chat.id, message_id=message_or_call.message.id, *args, **kwargs)
+            except:
+                pass
+        else:
+            await bot.reply_to(message_or_call.message, *args, **kwargs)
 
 # File and media handling
 async def default_file_handler(message: Message, file: File):
@@ -190,7 +197,7 @@ async def media_handler(message: Message):
         file_data = message.video
         file_name = file_data.file_unique_id + ".mp4"
 
-    if (medium_with_same_name := data.get_medium(message.caption, message.content_type)):
+    if message.caption and (medium_with_same_name := data.get_medium(message.caption, message.content_type)):
         medium_with_same_name.set_name(None)
         
     if not (medium := data.get_medium_by_file_name(file_name)):
