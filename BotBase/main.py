@@ -168,16 +168,16 @@ async def reply_to(message_or_call: Message | CallbackQuery, *args, edit: bool =
     '''Reply func both compatible with message and call'''
     print(type(message_or_call))
     if type(message_or_call) == Message:
-        await bot.reply_to(message_or_call, *args, **kwargs)
+        return await bot.reply_to(message_or_call, *args, **kwargs)
     else:
         #await bot.answer_callback_query(message_or_call.id)
         if edit:
             try:
-                await bot.edit_message_text(chat_id=message_or_call.message.chat.id, message_id=message_or_call.message.id, *args, **kwargs)
+                return await bot.edit_message_text(chat_id=message_or_call.message.chat.id, message_id=message_or_call.message.id, *args, **kwargs)
             except:
                 pass
         else:
-            await bot.reply_to(message_or_call.message, *args, **kwargs)
+            return await bot.reply_to(message_or_call.message, *args, **kwargs)
 
 # File and media handling
 async def default_file_handler(message: Message, file: File):

