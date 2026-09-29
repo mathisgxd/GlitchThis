@@ -7,7 +7,7 @@ import json
 from .dataHandler import create_data_session, Levels
 from .mediaHandler import File
 
-bot = AsyncTeleBot("<BOT_TOKEN_HERE>")
+bot = AsyncTeleBot("8391815993:AAHlNRr_ATED0a21snmy012VHs8hg5lOcLU")
 data = create_data_session("Data.db")
 
 async def check_auth(chat: Chat, user: User, level: int | Levels | None, owner_only: bool = False):
@@ -128,7 +128,7 @@ def command_handler(name: str, description: str | None = None, level: int | Leve
         async def wrapper(message_or_call: Message | CallbackQuery, *args, **kwargs):
             message_args = [arg.strip() for arg in " ".join(message_or_call.text.split()[1:]).split(",")] if supports_message_args and (type(message_or_call) == Message) and (message_or_call.content_type == "text") and len(message_or_call.text.split()) > 1 else []
             #print(message_args)
-            print(f"Command '{command.name}' executed")
+            print(f"Command '{command.name}' executed\nMessage args: {message_args}\nArgs: {args}")
             result = await func(message_or_call, *message_args, *args, **kwargs)
             return result
         if not name in FUNC_MAPPINGS.keys():

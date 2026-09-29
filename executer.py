@@ -3,17 +3,19 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pyautogui
-from BotBase import mediaHandler#, data, Medium
+from BotBase import mediaHandler, data
+from BotBase.dataHandler import Medium
 import ctypes
 import os
 import subprocess
-#import qrcode
-from io import BytesIO
+import qrcode
+#from io import BytesIO
+import io
 from PIL import Image
 import pygame
 import pygetwindow as gw
 import pynput
-#import cv2
+import cv2
 #import random
 import re
 import webbrowser
@@ -174,12 +176,53 @@ def open_site(url_or_query: str):
         webbrowser.open_new(f"https://www.google.com/search?q={url_or_query}")
 
 # Image
-def image_to_buffer(image: Image.Image):
-    buffer = BytesIO()
+def image_to_buffer(image):
+    if type(image) != Image.Image:
+        image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+
+    buffer = io.BytesIO()
     image.save(buffer, format="JPEG")
     buffer.seek(0)
 
     return buffer
+
+def snap_photo(warmup_cycles: int = 0):
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
+    if warmup_cycles:
+        for _ in range(warmup_cycles):
+            cap.grab()
+
+    cap.grab()
+    ret, frame = cap.retrieve()
+
+    cap.release()
+
+    #return frame if ret else None
+
+    if not ret:
+        return None
+    
+    file_name = "last_picture.png"
+    name = "last_picture"
+    cv2.imwrite(f"media/photo/{file_name}", frame)
+    if not (medium := data.get_medium(file_name, Medium.Types.PHOTO)):
+        medium = data.create_medium(Medium.Types.PHOTO, file_name, name)
+
+    #print(medium)
+    return frame
+
+def snap_screenshot():
+    screenshot = pyautogui.screenshot()
+
+    file_name = "last_screenshot.png"
+    name = "last_screenshot"
+    screenshot.save(f"media/photo/{file_name}")
+    if not (medium := data.get_medium(file_name, Medium.Types.PHOTO)):
+        medium = data.create_medium(Medium.Types.PHOTO, file_name, name)
+
+    return screenshot
 
 # Projector / display helpers
 def disconnect_lim():
@@ -238,6 +281,66 @@ class Video(mediaHandler.File):
                 window.close()
         else:
             close_window()
+
+# Other
+
+class WifiProfiler:
+    class Profile:
+        def __init__(self, wifi_ssid: str):
+            self.ssid = wifi_ssid
+            self.get()
+            self.get_password()
+            self.security = 'WPA'
+            self.qr_code: PIL.Image = None
+            self.get_qr_code()
+
+        def get(self):
+            self.cmd_output = subprocess.check_output(f'netsh wlan show profile name="{self.ssid}" key=clear', shell=True, text=True)
+            return self.cmd_output
+
+        def get_password(self):
+            try:
+                self.password = subprocess.check_output(f'netsh wlan show profile name="{self.ssid}" key=clear | findstr "Contenuto chiave"', shell=True, text=True).splitlines()[0].split(":")[-1].strip()
+            except:
+                self.password = subprocess.check_output(f'netsh wlan show profile name="{self.ssid}" key=clear | findstr Key', shell=True, text=True).splitlines()[0].split(":")[-1].strip()
+            return self.password
+
+        def get_qr_code(self, as_bytes: bool = False):
+            if not self.qr_code:
+                qr_data = f"WIFI:T:{self.security};S:{self.ssid};P:{self.password};H:false;;"
+                qr_code = qrcode.make(qr_data)
+                self.qr_code = qr_code.get_image()
+
+            if not as_bytes:
+                return self.qr_code
+
+            image_bytes = io.BytesIO()
+            self.qr_code.save(image_bytes, format="PNG")
+            image_bytes.seek(0)
+            return image_bytes
+
+        def __str__(self):
+            return getattr(self, "cmd_output", "")
+
+    profiles = []
+
+    @classmethod
+    def get_wifi_profiles(cls):
+        cmd_output = subprocess.check_output("netsh wlan show profile", shell=True, text=True)
+        cmd_output_lines = [line for line in cmd_output.splitlines() if ":" in line]
+        wifi_ssids = [line.split(":")[-1].strip() for line in cmd_output_lines]
+        wifi_ssids = [name for name in wifi_ssids if name != ""]
+        cls.profiles = [cls.Profile(ssid) for ssid in wifi_ssids]
+        return cls.profiles
+
+    @classmethod
+    def get_wifi_profile(cls, wifi_ssid: str):
+        if (profile := [profile for profile in cls.profiles if profile.ssid == wifi_ssid]):
+            return profile[0]
+        profile = cls.Profile(wifi_ssid)
+        if profile not in cls.profiles:
+            cls.profiles.append(profile)
+        return profile
 
 # GTE
 class GTEFiles:
