@@ -39,8 +39,10 @@ Program commands:
   
 Image commands:  
 - screenshot (BASIC): Take a screenshot
+- picture (BASIC): Take a picture
   
 Other:  
+- wifi (BASIC): Get saved wifi profiles
 - gte (BASIC): Stands for GlitchThis Executer and can be used to create and save custom scripts that trigger a series of commands (check out GTE for more)
   
 ## Media handling
