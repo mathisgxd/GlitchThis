@@ -39,6 +39,7 @@ Program commands:
   
 Image commands:  
 - screenshot (BASIC): Take a screenshot
+  
 Other:  
 - gte (BASIC): Stands for GlitchThis Executer and can be used to create and save custom scripts that trigger a series of commands (check out GTE for more)
   
