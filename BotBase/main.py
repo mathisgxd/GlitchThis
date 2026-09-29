@@ -7,7 +7,7 @@ import json
 from .dataHandler import create_data_session, Levels
 from .mediaHandler import File
 
-bot = AsyncTeleBot("8391815993:AAHlNRr_ATED0a21snmy012VHs8hg5lOcLU")
+bot = AsyncTeleBot("<BOT_TOKEN_HERE>")
 data = create_data_session("Data.db")
 
 def check_auth(chat: Chat, user: User, level: int | Levels | None):
