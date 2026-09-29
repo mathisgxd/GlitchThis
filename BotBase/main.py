@@ -10,7 +10,7 @@ from .mediaHandler import File
 bot = AsyncTeleBot("<BOT_TOKEN_HERE>")
 data = create_data_session("Data.db")
 
-def check_auth(chat: Chat, user: User, level: int | Levels | None):
+async def check_auth(chat: Chat, user: User, level: int | Levels | None, owner_only: bool = False):
     '''Confronts chat level and user level with the required level'''
 
     # Temporary(?)
@@ -23,8 +23,8 @@ def check_auth(chat: Chat, user: User, level: int | Levels | None):
     # Else (if chat is not registered yet):
     else:
         # Register chat
-        print(f"ERROR: Requester CHAT is not registered. Registering now")
-        chat_data = data.create_chat(tg_id=chat.id, level=Levels.BASIC)#Levels.UNAUTHORIZED)
+        print(f"Requester CHAT is not registered. Registering now")
+        chat_data = data.create_chat(tg_id=chat.id, level=Levels.UNAUTHORIZED)#Levels.UNAUTHORIZED)
 
     # If user is registered:
     if (user_data := data.get_user(user.id)):
@@ -32,12 +32,16 @@ def check_auth(chat: Chat, user: User, level: int | Levels | None):
     # Else (if user is not registered yet):
     else:
         # Register user
-        print(f"ERROR: Requester USER is not registered. Registering now")
-        user_data = data.create_user(tg_id=user.id, level=Levels.BASIC)#Levels.UNAUTHORIZED)
+        print(f"Requester USER is not registered. Registering now")
+        if not data.users:
+            print(f"Setting first USER as an owner")
+            user_data = data.create_user(tg_id=user.id, level=Levels.ADVANCED, is_owner=True)
+        else:
+            user_data = data.create_user(tg_id=user.id, level=Levels.UNAUTHORIZED)#Levels.UNAUTHORIZED)
 
-    #print(chat.id, user.id, chat_data.level, user_data.level, level)
+    print(f"Required level: {Levels(level).name}, Chat level: {Levels(chat_data.level).name}, User level: {Levels(user_data.level).name}")
 
-    if True: #level:
+    """ if True: #level:
         # If the chat level is lower than the required level:
         if chat_data.level < level:
             print(f"ERROR: Requested func requires level {level}, but requester CHAT level is {chat_data.level}")
@@ -46,12 +50,23 @@ def check_auth(chat: Chat, user: User, level: int | Levels | None):
         # If the user level is lower than the required level:
         if user_data.level < level:
             print(f"ERROR: Requested func requires level {level}, but requester USER level is {user_data.level}")
-            return False
+            return False """
+
+    if (max_level := max(user_data.level, chat_data.level)) < level:
+        print(f"ERROR: Requested func requires {Levels(level).name} chat (or user) level (or higher)")
+
+        if max_level == Levels.UNAUTHORIZED:
+            await bot.send_message(chat.id, "This chat is UNAUTHORIZED", reply_markup=InlineKeyboardMarkup([[FuncInlineKeyboardButton("Request auth", send_chat_auth_request)]]))
+        return False
+
+    if owner_only and not user_data.is_owner:
+        print(f"ERROR: Requested func requires the requester USER to be an owner")
+        return False
 
     return True
 
 
-def auth_handler(level: int | Levels = Levels.BASIC):#, *args, **kwargs):
+def auth_handler(level: int | Levels = Levels.BASIC, owner_only: bool = False):#, *args, **kwargs):
     '''Use on top of bot.message_handler for auth handling
     
     :param level: Minimum required chat and user level'''
@@ -61,7 +76,7 @@ def auth_handler(level: int | Levels = Levels.BASIC):#, *args, **kwargs):
         async def wrapper(message_or_call: Message | CallbackQuery, *args, **kwargs):
             #print(level)
             is_message = type(message_or_call) == Message
-            if not check_auth(message_or_call.chat if is_message else message_or_call.message.chat, message_or_call.from_user, level):
+            if not await check_auth(message_or_call.chat if is_message else message_or_call.message.chat, message_or_call.from_user, level, owner_only):
                 return
             
             result = await func(message_or_call, *args, **kwargs)
@@ -91,7 +106,7 @@ def auth_handler(level: int | Levels = Levels.BASIC):#, *args, **kwargs):
 
 FUNC_MAPPINGS = {}
 
-def command_handler(name: str, description: str | None = None, level: int | Levels = Levels.BASIC, show: bool = True, supports_message_args: bool = True, *args, **kwargs):#, *args, **kwargs):
+def command_handler(name: str, description: str | None = None, level: int | Levels = Levels.BASIC, owner_only: bool = False, show: bool = True, supports_message_args: bool = True, *args, **kwargs):#, *args, **kwargs):
     '''
     Uses auth_handler and bot.message_handler
 
@@ -108,7 +123,7 @@ def command_handler(name: str, description: str | None = None, level: int | Leve
 
         #@auth_handler(command.level)
         @bot.message_handler(commands=[name])#, *args, **kwargs)
-        @auth_handler(command.level)
+        @auth_handler(command.level, owner_only)
         @wraps(func)
         async def wrapper(message_or_call: Message | CallbackQuery, *args, **kwargs):
             message_args = [arg.strip() for arg in " ".join(message_or_call.text.split()[1:]).split(",")] if supports_message_args and (type(message_or_call) == Message) and (message_or_call.content_type == "text") and len(message_or_call.text.split()) > 1 else []
@@ -249,8 +264,45 @@ async def text_handler(message: Message):
         medium.set_name(message.text)
         await reply_to(message, f"Medium name set to '{message.text}'")
 
+""" @command_handler("auth_this_chat", show=False, owner_only=True)
+async def auth_this_chat(message: Message, level: str | int | Levels = Levels.BASIC):
+    level = level if type(level) == int else (int(level) if level.isdigit() else Levels[level.upper()].value) if (type(level) == str) else level.value
+    chat_data = data.get_chat(message.chat.id)
+    chat_data.set_level(level)
+    await reply_to(message, f"Chat level set to {Levels(level).name}") """
 
-        
+get_level = lambda level: Levels(level) if type(level) == int else (Levels(int(level)) if level.isdigit() else Levels[level.upper()]) if (type(level) == str) else level
+
+@command_handler("set_chat_level", show=False, owner_only=True)
+async def set_chat_level(message_or_call: Message | CallbackQuery, level: str | int | Levels, chat_id: str | int | None = None):
+    level = get_level(level)
+
+    chat = await bot.get_chat(chat_id) if chat_id else (message_or_call.chat if type(message_or_call) == Message else message_or_call.message.chat)
+    chat_data = data.get_chat(chat.id)
+
+    chat_data.set_level(level)
+    await reply_to(message_or_call, f"Chat '{chat.first_name}' level set to {Levels(level).name}")
+
+@command_handler("accept_chat_auth_request", show=False, owner_only=True)
+async def accept_chat_auth_request(call: CallbackQuery, level: str | int | Levels, chat_id: str | int):
+    level = get_level(level)
+
+    await set_chat_level(call, level, chat_id)
+
+    chat = await bot.get_chat(chat_id)
+    await bot.send_message(chat.id, f"Your auth request has been {"accepted!" if level > Levels.UNAUTHORIZED else "denied."}\nThis chat level is now {level.name}")
+
+
+@command_handler("send_chat_auth_request", show=False, level=Levels.UNAUTHORIZED)
+async def send_chat_auth_request(message_or_call: Message | CallbackQuery):
+    requester_chat = message_or_call.chat if type(message_or_call) == Message else message_or_call.message.chat
+
+    for owner_data in (user_data for user_data in data.users if user_data.is_owner):
+        reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton(level.name, accept_chat_auth_request, level.value, requester_chat.id)] for level in Levels])
+        await bot.send_message(owner_data.tg_id, f"Chat '{requester_chat.first_name}' requested authorization.\nChoose its level below:", reply_markup=reply_markup)
+
+    await reply_to(message_or_call, "An auth request has been sent to the owner(s) of the bot.\nI'll warn you when it gets reviewed")
+
 
 async def start():
     await bot.set_my_commands([BotCommand(cmd.name, cmd.description) for cmd in data.commands if cmd.show])

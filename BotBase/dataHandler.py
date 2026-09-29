@@ -36,7 +36,7 @@ class ManageSession:
 class Levels(IntEnum):
     UNAUTHORIZED = 0
     BASIC = 1
-    OWNER = 2
+    ADVANCED = 2
 
 class User(Base, ManageSession):
     __tablename__ = "users"
@@ -44,9 +44,16 @@ class User(Base, ManageSession):
     id: Mapped[int] = mapped_column(primary_key=True)
     tg_id: Mapped[int]
     level: Mapped[int]
+    is_owner: Mapped[bool] = mapped_column(default=False)
 
     def set_level(self, level: int | Levels, commit: bool = True):
         self.level = level
+
+        if commit:
+            self.commit_session()
+
+    def set_owner(self, is_owner: bool = True, commit: bool = True):
+        self.is_owner = is_owner
 
         if commit:
             self.commit_session()
@@ -77,6 +84,8 @@ class Medium(Base, ManageSession):
     class Types(StrEnum):
         PHOTO = "photo"
         AUDIO = "audio"
+        VOICE = "voice"
+        VIDEO = "video"
 
     __tablename__ = "media"
 
@@ -158,9 +167,9 @@ class DataSession(Session):
 
         return instance
 
-    def create_user(self, tg_id: int, level: int | Levels = Levels.BASIC, commit: bool = True, **kwargs) -> User:
+    def create_user(self, tg_id: int, level: int | Levels = Levels.BASIC, is_owner: bool = False, commit: bool = True, **kwargs) -> User:
         '''Create a new user'''
-        return self.create(User, tg_id=tg_id, level=level, commit=commit, **kwargs)
+        return self.create(User, tg_id=tg_id, level=level, is_owner=is_owner, commit=commit, **kwargs)
 
     def create_chat(self, tg_id: int, level: int | Levels = Levels.BASIC, commit: bool = True, **kwargs) -> Chat:
         '''Create a new chat'''

@@ -90,7 +90,7 @@ async def crash(message_or_call):
     executer.crash()
 
 # Program commands
-@command_handler("notepad", "🗒️ Open Notepad")
+@command_handler("notepad", "🗒️ Open Notepad (with optional text)")
 async def notepad(message, text: str | None = None):
     #split_text = message.text.split()
     #text = " ".join(split_text[1:]) if len(split_text) > 1 else None
@@ -312,7 +312,7 @@ async def GTE_handler(message_or_call: Message | CallbackQuery, gte_file_name: s
             code_lines = code.splitlines()
             tasks = []
             for code_line in code_lines:
-                if not code_line:
+                if not code_line.strip():
                     continue
 
                 split_line = code_line.split()

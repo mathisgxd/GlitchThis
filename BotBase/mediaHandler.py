@@ -44,11 +44,12 @@ class File:
     def exists(self):
         return os.path.exists(self.path)
 
-def delete_files(data_session: DataSession, types: Medium.Types | tuple[Medium.Types] | None = None):
-    try:
-        data_session.delete_media(types)
-    except:
-        pass
+def delete_files(data_session: DataSession | None = None, types: Medium.Types | tuple[Medium.Types] | None = None):
+    if data_session:
+        try:
+            data_session.delete_media(types)
+        except:
+            pass
 
     types = ([types] if type(types) == Medium.Types else types) if types else tuple(t.value for t in Medium.Types)
     for t in types:

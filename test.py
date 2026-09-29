@@ -5,15 +5,15 @@ from BotBase import *
 # START
 @command_handler("start_A", show=False, level=Levels.BASIC)
 async def start_A(call):
-    await bot.reply_to(call.message, "A clicked!")
+    await reply_to(call, "A clicked!")
 
 @command_handler("start_B", show=False, level=Levels.BASIC)
 async def start_B(call):
-    await bot.reply_to(call.message, "B clicked!")
+    await reply_to(call, "B clicked!")
 
 @command_handler("start_C", show=False, level=Levels.BASIC)
 async def start_C(call):
-    await bot.reply_to(call.message, "C clicked!")
+    await reply_to(call, "C clicked!")
 
 @command_handler("start", "Basic example", level=Levels.BASIC)
 async def start(message_or_call):
