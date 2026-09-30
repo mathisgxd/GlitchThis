@@ -191,6 +191,7 @@ async def photo_handler(message_or_call, medium_name_or_id: str | int, cmd: str 
             text = "📷 Photo"
             reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Open", photo_handler, photo.medium.id, "open", False)],
                                                     [FuncInlineKeyboardButton("Close", photo_handler, photo.medium.id, "close", False)],
+                                                    [FuncInlineKeyboardButton("Close all", photo_handler, photo.medium.id, "close_all", False)],
                                                     [FuncInlineKeyboardButton("Set as wallpaper", photo_handler, photo.medium.id, "wallpaper", False)],
                                                     [FuncInlineKeyboardButton("Delete", photo_handler, photo.medium.id, "delete", False)]])
             await reply_to(message_or_call, text, reply_markup=reply_markup)
@@ -360,12 +361,19 @@ async def GTE_handler(message_or_call: Message | CallbackQuery, gte_file_name: s
                 if command_name not in FUNC_MAPPINGS.keys():
                     match command_name:
                         case "wait":
-                            time = float(args[0]) if args else 1
-                            #await asyncio.sleep(min(0.1, time))
-                            await reply_to(message_or_call, f"Waiting {time} second(s)")
-                            #if time > 0.1:
-                            #    await asyncio.sleep(time - 0.1)
-                            await asyncio.sleep(time)
+                            if not args:
+                                #await reply_to(message_or_call, f"Waiting for previous task(s) to finish")
+                                asyncio.create_task(reply_to(message_or_call, f"Waiting for previous task(s) to finish"))
+                                await asyncio.gather(*tasks)
+                                tasks = []
+                            else:
+                                time = float(args[0])
+                                #await asyncio.sleep(min(0.1, time))
+                                #await reply_to(message_or_call, f"Waiting {time} second(s)")
+                                asyncio.create_task(reply_to(message_or_call, f"Waiting {time} second(s)"))
+                                #if time > 0.1:
+                                #    await asyncio.sleep(time - 0.1)
+                                await asyncio.sleep(time)
 
                     continue
 
