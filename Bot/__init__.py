@@ -100,31 +100,25 @@ async def notepad(message, text: str | None = None):
     await reply_to(message, "🗒️ Notepad opened", reply_markup=reply_markup)
 
 @command_handler("cmd", "💻 Execute a cmd command")
-async def execute_cmd(message):
-    split_text = message.text.split()
-
-    if len(split_text) == 1:
-        await reply_to(message, "ERROR: Command needs to be followed by a cmd command")
+async def execute_cmd(message_or_call: Message | CallbackQuery, cmd_command: str | None = None):
+    if not cmd_command:
+        await reply_to(message_or_call, "ERROR: Command needs to be followed by a cmd command")
         return
     
-    cmd_command = " ".join(split_text[1:])# if len(split_text) > 1 else None
     ret = executer.execute_cmd(cmd_command)
 
-    await reply_to(message, f"💻 Cmd command executed\n\n{ret}")
+    await reply_to(message_or_call, f"💻 Cmd command executed\n\n{ret}")
 
 @command_handler("site", "🔗 Open a url or search in the browser")
-async def site(message):
-    split_text = message.text.split()
-
-    if len(split_text) == 1:
-        await reply_to(message, "ERROR: Command needs to be followed by a url or a search query")
+async def site(message_or_call: Message | CallbackQuery, query: str | None = None):
+    if not query:
+        await reply_to(message_or_call, "ERROR: Command needs to be followed by a url or a search query")
         return
-    
-    query = " ".join(split_text[1:])# if len(split_text) > 1 else None
+
     executer.open_site(query)
 
     reply_markup = InlineKeyboardMarkup([[FuncInlineKeyboardButton("Close window", close_window)]])
-    await reply_to(message, "🔗 Site opened", reply_markup=reply_markup)
+    await reply_to(message_or_call, "🔗 Site opened", reply_markup=reply_markup)
 
 # Image commands
 @command_handler("screenshot", "⛶ Take a screenshot")
@@ -172,6 +166,26 @@ async def chromereader(message: Message):
         
         with open(zip_path, "rb") as file:
             await bot.send_document(message.chat.id, file, caption=caption, parse_mode="html")
+
+@command_handler("write", "⌨️ Write emulating the keyboard")
+async def write(message_or_call: Message | CallbackQuery, text: str | None = None):
+    if not text:
+        await reply_to(message_or_call, "ERROR: Command needs to be followed by the text to write")
+        return
+
+    executer.pyautogui.write(text)
+
+    await reply_to(message_or_call, "⌨️ Text written")
+
+@command_handler("shortcut", "⌨️ Emulate a keyboard shortcut")
+async def shortcut(message_or_call: Message | CallbackQuery, *keys):
+    if not keys:
+        await reply_to(message_or_call, "ERROR: Command needs to be followed by the key(s)")
+        return
+
+    executer.pyautogui.shortcut(*keys)
+
+    await reply_to(message_or_call, "⌨️ Shortcut emulated")
 
 # Media
 get_medium_by_name_or_id = lambda name_or_id, media_type: data.get_medium_by_id(name_or_id) if (type(name_or_id) == int) or name_or_id.isdigit() else data.get_medium(name_or_id, media_type)
